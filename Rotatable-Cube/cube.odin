@@ -22,7 +22,7 @@ main :: proc() {
 	glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
 	glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
-	window := glfw.CreateWindow(800, 800, "Rainbow Triangle", nil, nil)
+	window := glfw.CreateWindow(800, 800, "Rotating Cube", nil, nil)
 	assert(window != nil)
 	defer glfw.DestroyWindow(window)
 	
@@ -39,16 +39,16 @@ main :: proc() {
 	glfw.SetKeyCallback(window, callback_key)
 	glfw.SetFramebufferSizeCallback(window, callback_size)
 
-	// Create equilateral triangle on unit circle (bonus: make it rotate!)
 	// Colors:
 	c0 := rgbHexToFractions(0xFFFFFF)
 
-	c1 := rgbHexToFractions(0xd3473d)
-	c2 := rgbHexToFractions(0xf6ad0f)
-	c3 := rgbHexToFractions(0xf5efeb)
-	c4 := rgbHexToFractions(0x86bcd1)
-	c5 := rgbHexToFractions(0x316a96)
-	c6 := rgbHexToFractions(0x2e243f)
+	c1 := rgbHexToFractions(0xd3473d) // red
+	c2 := rgbHexToFractions(0xf5efeb) // white
+	c3 := rgbHexToFractions(0xf6ad0f) // orange
+	c4 := rgbHexToFractions(0x316a96) // blue
+	c5 := rgbHexToFractions(0x2e243f) // purple
+	c6 := rgbHexToFractions(0x86bcd1) // light blue
+
 
 
 	vertices : [6*4*6] f32 
@@ -167,18 +167,18 @@ main :: proc() {
 			0, 0, -1,
 			0, 1,  0,
 		};
-		ch           := f32(1.5)   // Camera height
-		k            := f32(0.3) // Cube scale
+		ch           := f32(3)   // Cube offset
+		k            := f32(0.5) // Cube scale
 		view_mat := [16] f32 {
 			k, 0, 0, 0,
 			0, k, 0, 0,
 			0, 0, k, ch,
 			0, 0, 0, 1,
 		};
-		perspective_mat := [16] f32 {
-			1, 0, 0, 0,
-			0, 1, 0, 0,
-			0, 0, 3, -4,
+		perspective_mat := [16] f32 { // The WebGL page on perspective motivates how to calculate this.
+			2, 0, 0, 0,
+			0, 2, 0, 0,
+			0, 0, 3, -8,
 			0, 0, 1, 0,
 		};
 	
