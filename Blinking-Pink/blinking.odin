@@ -1,3 +1,8 @@
+// Created by Benjamin Thompson (github: bg-thompson)
+// Last updated: 2022.02.25
+// Created for educational purposes. Used verbatim, it is
+// probably unsuitable for production code.
+
 package main
 
 import "vendor:glfw"
