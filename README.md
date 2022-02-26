@@ -20,4 +20,4 @@ An RGB triangle which rotates over time.
 
 A cube with different faces which rotates over time.
 
-<img src="./Readme-Imgs/rotating-cube.png" alt="An OS window showing a cube in the middle of rotation">
+<img src="./Readme-Imgs/rotating-cube.png" alt="An OS window showing a cube in the middle of rotation" width="400">
