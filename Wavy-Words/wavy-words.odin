@@ -1,3 +1,8 @@
+// Created by Benjamin Thompson (github: bg-thompson)
+// Last updated: 2022.03.01
+// Created for educational purposes. Used verbatim, it is
+// probably unsuitable for production code.
+
 package main
 
 import "vendor:glfw"
@@ -11,17 +16,9 @@ import   "core:os"
 WINDOW_H	:: 800
 WINDOW_W	:: 800
 FONT		:: `C:\Windows\Fonts\arialbd.ttf`
-FONTSCALE	:: 150
+FONTSCALE	:: 125
 CHARACTER	:: '#'
-SENTENCE	:: "Cool, a baby hipster."
-
-
-/* Write function which:
-   creates a list of vertices to draw the characters on
-   calls Subdata on the list
-   -- how do we specify which vertices have which textures?
-   draws the triangles
-*/
+SENTENCE	:: "Duty calls, 3 o'clock tea!"
 
 update_uni_2fv :: proc( program : u32, var_name : cstring, new_value_ptr : [^] f32) {
     gl.UniformMatrix2fv(gl.GetUniformLocation(program, var_name), 1, gl.TRUE, new_value_ptr)
@@ -39,6 +36,8 @@ Character_texture :: struct {
     texID   : u32,
     width   : i32, 
     height  : i32,
+    bbox_x  : f32,
+    bbox_y  : f32,
     advance : f32,
     bitmap  : [^] byte,
 }
@@ -107,7 +106,6 @@ main :: proc() {
     
     for r in 32..126 {// The printable ASCII range, per wikipedia.
 	bm_w, bm_h, xo, yo : i32
-	advance, l_bearing : f32
 	glyph_index := tt.FindGlyphIndex(&font, rune(r))
 	glyph_bitmap := tt.GetGlyphBitmap(
 	    info    = &font,
@@ -121,14 +119,23 @@ main :: proc() {
 	)
 	// Memory leak: the bitmaps should be freed with tt.FreeBitmap... but it's unclear what the second arg of FreeBitmap does.
 
-	raw_advance, raw_l_bearing : i32
-	// Try computing with GetGlyphHMetrics and ScaleForPixelHeight. For now just use width.
-	tt.GetGlyphHMetrics(&font, glyph_index, &raw_advance, &raw_l_bearing)
-	// Scale to font size.
-	advance		= character_scale * f32(raw_advance)
-	l_bearing	= character_scale * f32(raw_l_bearing)
-	//f.println("scaled rune, advance, l_bearing", rune(r), raw_advance, raw_l_bearing) \\ @debug
+	// Get bbox values.
+	box1, box2, box3, box4 : i32
+	tt.GetGlyphBox(&font, glyph_index, &box1, &box2, &box3, &box4)
+	//f.println("Debug: rune, raw coords: ", rune(r), box1, box2, box3, box4) // @debug
+	raw_ascent, raw_decent, raw_linegap    : i32
 
+	// Get advance and l_bearing.
+	raw_advance, raw_l_bearing : i32
+	tt.GetGlyphHMetrics(&font, glyph_index, &raw_advance, &raw_l_bearing)
+	
+	// Scale to font size.
+	bbox_x          := character_scale * f32(box1)
+	bbox_y          := character_scale * f32(box2)
+	advance		:= character_scale * f32(raw_advance)
+	l_bearing	:= character_scale * f32(raw_l_bearing)
+	//f.println("Debug: rune, scaled coords: ", rune(r), bbox_x, bbox_y) // @debug
+	
 	id : u32
 	gl.GenTextures(1, &id)
 	gl.BindTexture(gl.TEXTURE_2D, id)
@@ -152,6 +159,8 @@ main :: proc() {
 	ct.texID   = id
 	ct.width   = bm_w
 	ct.height  = bm_h
+	ct.bbox_x  = bbox_x
+	ct.bbox_y  = bbox_y
 	ct.advance = advance
 	ct.bitmap  = glyph_bitmap
 	rune_to_glyph_texture[rune(r)] = ct
@@ -195,8 +204,6 @@ main :: proc() {
     gl.EnableVertexAttribArray(0)
     gl.EnableVertexAttribArray(1)
 
-
-
     //-------------------------------------------------------------
     //Compile the vertex and fragment shader.
     //-------------------------------------------------------------
@@ -221,11 +228,13 @@ main :: proc() {
     //-------------------------------------------------------------
     //Render the character!
     //-------------------------------------------------------------
-    renderCharacter :: proc( r : rune, x , y : f32) -> (advance : f32) {
+    renderCharacter :: proc( r : rune, xpos , ypos : f32) -> (advance : f32) {
 	char_texture := rune_to_glyph_texture[r]
 	w, h : f32
 	w = f32(char_texture.width)
 	h = f32(char_texture.height)
+	x := xpos + char_texture.bbox_x
+	y := ypos + char_texture.bbox_y
 	
 	bufferData := [4 * 6] f32 {
 	    x    , y + h, 0, 0,
@@ -240,26 +249,18 @@ main :: proc() {
 	gl.BufferSubData(gl.ARRAY_BUFFER, 0, size_of(bufferData), &bufferData)
 	gl.DrawArrays(gl.TRIANGLES, 0, 6)
 
-	return f32(char_texture.advance)
+	return char_texture.advance
     }
-
-    // Rotate the character over time.
-    watch : time.Stopwatch
-    time.stopwatch_start(&watch)
 
     gl.Enable(gl.BLEND)
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-
+    
+    watch : time.Stopwatch
+    time.stopwatch_start(&watch)
+    
     for !glfw.WindowShouldClose(window) {
-        defer time.sleep(5 * time.Millisecond)
         glfw.PollEvents()
-
-        raw_duration := time.stopwatch_duration(watch)
-        secs := f32(time.duration_seconds(raw_duration))
-
-        theta := f32(m.PI * secs )
-
-        radius := f32(0.5)
+	
         translation_mat := [16] f32 {
             1, 0, 0, 0,
             0, 1, 0, 0,
@@ -283,8 +284,20 @@ main :: proc() {
 	x, y, advance: f32
 	x = -0.9 * WINDOW_H
 	y = 0
+
+	// Add wave effect to the text
+	ha, wl : f32 // Half-amplitude, wavelength
+	// Call odin run <this file> -define:ha=200 to change this value at compile time.
+	ha = #config(ha, 100)
+	wl = f32(WINDOW_W) * #config(wl, 0.2)
+	    
+	raw_duration := time.stopwatch_duration(watch)
+        secs := f32(time.duration_seconds(raw_duration))
+	t := 3 * secs
+	
 	for r in SENTENCE {
-	    advance = renderCharacter(r, x, y)
+	    ywave := ha * m.sin(x/wl + t) + y
+	    advance = renderCharacter(r, x, ywave)
 	    x += advance
 	}
 
@@ -292,8 +305,6 @@ main :: proc() {
         glfw.SwapBuffers(window)
     }
 }
-
-
 
 callback_key :: proc "c" ( window : glfw.WindowHandle, key, scancode, action, mods : i32 ) {
     if action == glfw.PRESS && key == glfw.KEY_ESCAPE {
