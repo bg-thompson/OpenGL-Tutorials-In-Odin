@@ -1,6 +1,6 @@
 # A collection of introductory OpenGL programs in Odin.
 
-The programs below demonstrate illustrate OpenGL functions in Odin using the wrappers in "vendor:OpenGL". The programs start very basic and get progressively more complicated.
+The programs below illustrate OpenGL functions in Odin using the wrappers in "vendor:OpenGL". The programs start very basic and get progressively more complicated.
 
 The glfw library wrappers for Odin are also illustrated.
 
@@ -21,3 +21,15 @@ An RGB triangle which rotates over time.
 A cube with different faces which rotates over time.
 
 <img src="./Readme-Imgs/rotating-cube.png" alt="An OS window showing a cube in the middle of rotation" width="400">
+
+## [Moving Character](./Moving-Character)
+
+A character moves in a counter-clockwise circle over time.
+
+<img src="./Readme-Imgs/moving-character.png" alt="An OS window showing the character '@'" width="400">
+
+## [Wavy Words](./Wavy-Words)
+
+The characters of a sentence move in the form of a sine wave over time.
+
+<img src="./Readme-Imgs/wavy-words.png" alt="The sentence: Duty calls, 3 o'clock tea! in the shape of a sine wave." width="400">
