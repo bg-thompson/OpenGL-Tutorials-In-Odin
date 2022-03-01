@@ -57,7 +57,7 @@ main :: proc() {
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
     glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
-    window := glfw.CreateWindow(WINDOW_W, WINDOW_H, "Character Render", nil, nil)
+    window := glfw.CreateWindow(WINDOW_W, WINDOW_H, "Wavy Words", nil, nil)
     assert(window != nil)
     defer glfw.DestroyWindow(window)
     
