@@ -8,11 +8,12 @@ import f "core:fmt"
 import m "core:math"
 import   "core:os"
 
-WINDOW_H :: 800
-WINDOW_W :: 800
-FONT     :: `C:\Windows\Fonts\arialbd.ttf`
-FONTSCALE:: 100
-CHARACTER :: '#'
+WINDOW_H	:: 800
+WINDOW_W	:: 800
+FONT		:: `C:\Windows\Fonts\arialbd.ttf`
+FONTSCALE	:: 150
+CHARACTER	:: '#'
+SENTENCE	:: "Cool, a baby hipster."
 
 
 /* Write function which:
@@ -21,8 +22,6 @@ CHARACTER :: '#'
    -- how do we specify which vertices have which textures?
    draws the triangles
 */
-   
-
 
 update_uni_2fv :: proc( program : u32, var_name : cstring, new_value_ptr : [^] f32) {
     gl.UniformMatrix2fv(gl.GetUniformLocation(program, var_name), 1, gl.TRUE, new_value_ptr)
@@ -40,9 +39,11 @@ Character_texture :: struct {
     texID   : u32,
     width   : i32, 
     height  : i32,
-    advance : i32,
+    advance : f32,
     bitmap  : [^] byte,
 }
+
+rune_to_glyph_texture : map[rune]Character_texture
 
 main :: proc() {
     
@@ -96,7 +97,7 @@ main :: proc() {
     )
 
     // Create map of rune to character_texture for printable characters.
-    rune_to_glyph_texture := make(map[rune] Character_texture)
+    rune_to_glyph_texture = make(map[rune] Character_texture)
     defer delete(rune_to_glyph_texture)
     
     character_scale : f32
@@ -106,6 +107,7 @@ main :: proc() {
     
     for r in 32..126 {// The printable ASCII range, per wikipedia.
 	bm_w, bm_h, xo, yo : i32
+	advance, l_bearing : f32
 	glyph_index := tt.FindGlyphIndex(&font, rune(r))
 	glyph_bitmap := tt.GetGlyphBitmap(
 	    info    = &font,
@@ -118,6 +120,14 @@ main :: proc() {
 	    yoff    = &yo,
 	)
 	// Memory leak: the bitmaps should be freed with tt.FreeBitmap... but it's unclear what the second arg of FreeBitmap does.
+
+	raw_advance, raw_l_bearing : i32
+	// Try computing with GetGlyphHMetrics and ScaleForPixelHeight. For now just use width.
+	tt.GetGlyphHMetrics(&font, glyph_index, &raw_advance, &raw_l_bearing)
+	// Scale to font size.
+	advance		= character_scale * f32(raw_advance)
+	l_bearing	= character_scale * f32(raw_l_bearing)
+	//f.println("scaled rune, advance, l_bearing", rune(r), raw_advance, raw_l_bearing) \\ @debug
 
 	id : u32
 	gl.GenTextures(1, &id)
@@ -142,8 +152,7 @@ main :: proc() {
 	ct.texID   = id
 	ct.width   = bm_w
 	ct.height  = bm_h
-	// Try computing with GetGlyphHMetrics and ScaleForPixelHeight. For now just use width.
-	ct.advance = bm_w
+	ct.advance = advance
 	ct.bitmap  = glyph_bitmap
 	rune_to_glyph_texture[rune(r)] = ct
     }
@@ -151,20 +160,6 @@ main :: proc() {
     //-------------------------------------------------------------
     //Set up a rectangle to have the character texture drawn on it.
     //-------------------------------------------------------------
-
-    h, w : f32
-    h = 300
-    w = 300
-
-    rect_verts : [6 * 4] f32 
-    rect_verts = { // rect coords : vec2, texture coords : vec2
-    0, h,     0, 0,
-    0, 0,    0, 1,
-    w, 0,    1, 1,
-    0, h,    0, 0,
-    w, 0,    1, 1,
-    w, h,     1, 0,
-    }
 
     // Make the rendered region a rectangle with origin (0,0,0).
     render_rect_w , render_rect_h : f32
@@ -176,11 +171,11 @@ main :: proc() {
         0, 1/render_rect_h,
     }
     proj_mat_ptr : [^] f32 = &proj_mat[0]
-    // Remember to update this in the render loop!
+    // Remember to update the pointer in the render loop!
 
-    //-------------------------------------------------------------
-    //Tell the GPU about the data, especially the font texture.
-    //-------------------------------------------------------------
+    //------------------------------------------------------------------
+    //Tell the GPU about the data, and give it space to draw characters.
+    //------------------------------------------------------------------
 
     VAO : u32
     gl.GenVertexArrays(1, &VAO)
@@ -189,11 +184,13 @@ main :: proc() {
     VBO : u32
     gl.GenBuffers(1, &VBO)
     gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
-    gl.BufferData(gl.ARRAY_BUFFER, size_of(rect_verts), &rect_verts, gl.STATIC_DRAW)
+    // Allocate space to draw a rectangle with the character glyph on it.
+    
+    // The zero value of a multi pointer is nil (per odin-lang.org/docs/overview).
+    gl.BufferData(gl.ARRAY_BUFFER, size_of(f32) * 4*6, nil, gl.DYNAMIC_DRAW)
 
-    // Position and color attributes. DON'T FORGET TO ENABLE!!!
-    // Even more importantly... THE LAST ARGUMENT IS IN BYTES, NOT ARRAY POSITION!!!
-    gl.VertexAttribPointer(0, 2, gl.FLOAT, gl.FALSE, 4 * size_of(f32), 0)
+    // Note: THE LAST ARGUMENT IS IN BYTES, NOT ARRAY POSITION!!! (common bug)
+    gl.VertexAttribPointer(0, 2, gl.FLOAT, gl.FALSE, 4 * size_of(f32), 0 * size_of(f32))
     gl.VertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, 4 * size_of(f32), 2 * size_of(f32))
     gl.EnableVertexAttribArray(0)
     gl.EnableVertexAttribArray(1)
@@ -224,6 +221,27 @@ main :: proc() {
     //-------------------------------------------------------------
     //Render the character!
     //-------------------------------------------------------------
+    renderCharacter :: proc( r : rune, x , y : f32) -> (advance : f32) {
+	char_texture := rune_to_glyph_texture[r]
+	w, h : f32
+	w = f32(char_texture.width)
+	h = f32(char_texture.height)
+	
+	bufferData := [4 * 6] f32 {
+	    x    , y + h, 0, 0,
+	    x    , y    , 0, 1,
+	    x + w, y    , 1, 1,
+	    x    , y + h, 0, 0,
+	    x + w, y    , 1, 1,
+	    x + w, y + h, 1, 0,
+	}
+
+	gl.BindTexture(gl.TEXTURE_2D, char_texture.texID)
+	gl.BufferSubData(gl.ARRAY_BUFFER, 0, size_of(bufferData), &bufferData)
+	gl.DrawArrays(gl.TRIANGLES, 0, 6)
+
+	return f32(char_texture.advance)
+    }
 
     // Rotate the character over time.
     watch : time.Stopwatch
@@ -233,7 +251,7 @@ main :: proc() {
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
     for !glfw.WindowShouldClose(window) {
-        //defer time.sleep(5 * time.Millisecond)
+        defer time.sleep(5 * time.Millisecond)
         glfw.PollEvents()
 
         raw_duration := time.stopwatch_duration(watch)
@@ -254,7 +272,6 @@ main :: proc() {
         // Draw commands.
         gl.BindVertexArray(VAO)
         defer gl.BindVertexArray(0)
-	gl.BindTexture(gl.TEXTURE_2D, rune_to_glyph_texture[CHARACTER].texID)
 
         update_uni_2fv(shader_program, "projection", proj_mat_ptr)
         update_uni_4fv(shader_program, "translation", trans_mat_ptr)
@@ -262,11 +279,21 @@ main :: proc() {
         gl.ClearColor(0.1, 0.1, 0.1, 1)
         gl.Clear(gl.COLOR_BUFFER_BIT)
 
-        // First arg: vertex array starting index, Last arg: how many vertices to draw.
-        gl.DrawArrays(gl.TRIANGLES, 0, 6)
+	// Render string.
+	x, y, advance: f32
+	x = -0.9 * WINDOW_H
+	y = 0
+	for r in SENTENCE {
+	    advance = renderCharacter(r, x, y)
+	    x += advance
+	}
+
+	// Send buffer to screen.
         glfw.SwapBuffers(window)
     }
 }
+
+
 
 callback_key :: proc "c" ( window : glfw.WindowHandle, key, scancode, action, mods : i32 ) {
     if action == glfw.PRESS && key == glfw.KEY_ESCAPE {
