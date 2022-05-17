@@ -1,16 +1,16 @@
 // Created by Benjamin Thompson (github: bg-thompson)
-// Last updated: 2022.02.25
+// Last updated: 2022.05.17
 // Created for educational purposes. Used verbatim, it is
 // probably unsuitable for production code.
 
 package main
 
-import "vendor:glfw"
+import    "vendor:glfw"
 import gl "vendor:OpenGL"
-import "core:time"
-import f "core:fmt"
-import m "core:math"
-import   "core:os"
+import    "core:time"
+import f  "core:fmt"
+import m  "core:math"
+import    "core:os"
 
 main :: proc() {
     // Setup window, including priming for OpenGL 3.3.
@@ -41,10 +41,10 @@ main :: proc() {
     // Create equilateral triangle on unit circle (bonus: make it rotate!)
 
     vertices : [18] f32 
-    vertices = {                    //Colors
-     1.0,                     0, 0, 1, 0, 0,
-    -0.5, m.sqrt(f32(3)) *  0.5, 0, 0, 1, 0,
-    -0.5, m.sqrt(f32(3)) * -0.5, 0, 0, 0, 1,
+    vertices = { // Coordinates;        Colors
+	 1.0,                     0, 0, 1, 0, 0,
+	-0.5, m.sqrt(f32(3)) *  0.5, 0, 0, 1, 0,
+	-0.5, m.sqrt(f32(3)) * -0.5, 0, 0, 0, 1,
     }
 
     // Set up VAO, VBO
@@ -67,13 +67,13 @@ main :: proc() {
 
     shader_program : u32
     program_ok: bool;
-      vertex_shader := string(#load("vertex.glsl"))
+    vertex_shader := string(#load("vertex.glsl"))
     fragment_shader := string(#load("fragment.glsl"))
 
     shader_program, program_ok = gl.load_shaders_source(vertex_shader, fragment_shader);
 
     if !program_ok {
-        f.println("failed to load and compiler shaders"); os.exit(1)
+        f.println("failed to load and compile shaders"); os.exit(1)
     }
 
     gl.UseProgram(shader_program)
@@ -83,7 +83,7 @@ main :: proc() {
     time.stopwatch_start(&watch)
 
     for !glfw.WindowShouldClose(window) {
-        defer time.sleep(5 * time.Millisecond)
+	// defer time.sleep(5 * time.Millisecond)
         glfw.PollEvents()
 
         // Send theta value to GPU.
