@@ -8,12 +8,12 @@ uniform float theta;
 
 void main() {
 
-	mat3 rotation_mat = mat3(
-		cos(theta), sin(-theta), 0,
-		sin(theta), cos( theta), 0,
-		         0,           0, 1
-	);
+        mat3 rotation_mat = mat3(
+                cos(theta), sin(-theta), 0,
+                sin(theta), cos( theta), 0,
+                         0,           0, 1
+        );
 
-	gl_Position = vec4(rotation_mat * aPos, 1);
-	ourColor    = aColor;
+        gl_Position = vec4(rotation_mat * aPos, 1);
+        ourColor    = aColor;
 }

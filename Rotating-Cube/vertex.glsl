@@ -8,13 +8,13 @@ uniform float k;
 
 float kk = 0.5;
 
-uniform mat3 model_mat;
+uniform mat3 rotation_mat;
 uniform mat3 camera_to_x_mat;
-uniform mat4 view_mat;
+uniform mat4 translation_mat;
 uniform mat4 perspective_mat;
 
 void main() {
 
-	gl_Position = perspective_mat * view_mat * vec4(camera_to_x_mat * model_mat * aPos, 1);
-	ourColor    = aColor;
+        gl_Position = perspective_mat * translation_mat * vec4(camera_to_x_mat * rotation_mat * aPos, 1);
+        ourColor    = aColor;
 }

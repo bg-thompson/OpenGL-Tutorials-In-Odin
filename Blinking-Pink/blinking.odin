@@ -1,15 +1,23 @@
-// Created by Benjamin Thompson (github: bg-thompson)
-// Last updated: 2022.02.25
-// Created for educational purposes. Used verbatim, it is
-// probably unsuitable for production code.
+// An elementary program in Odin which creates a window that oscillates
+// between pink and blue.
+//
+// Created by Benjamin Thompson. Available at:
+// https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
+// Last updated: 2022.11.13
+//
+// To compile and run the program, use the command
+//
+//     odin run Blinking-Pink
+//
+// Created for educational purposes. Used verbatim, it is probably
+// unsuitable for production code.
 
 package main
 
-import "vendor:glfw"
+import    "vendor:glfw"
 import gl "vendor:OpenGL"
-import f "core:fmt"
-import "core:time"
-import m "core:math"
+import    "core:time"
+import    "core:math"
 
 main :: proc() {
     // Initialize glfw, specify OpenGL version.
@@ -35,22 +43,28 @@ main :: proc() {
     w, h := glfw.GetFramebufferSize(window)
     gl.Viewport(0,0,w,h)
     
-    // Start timer.
+    // Start blinking timer.
     watch : time.Stopwatch
     time.stopwatch_start(&watch)
 
     // Render loop
     for !glfw.WindowShouldClose(window) {
-	glfw.PollEvents()
-	// Create oscillating value (osl).
-	raw_duration := time.stopwatch_duration(watch)
-	secs := f32(time.duration_seconds(raw_duration))
-	osl := (m.sin(3 * secs) + 1) * 0.5
-	// Clear screen with color.
-	gl.ClearColor(0.9 * osl, 0.2, 0.8, 1) // Pink: 0.9, 0.2, 0.8
-	gl.Clear(gl.COLOR_BUFFER_BIT)
-	// Render image, then sleep for a bit.
-	glfw.SwapBuffers(window)
-	time.sleep(5 * time.Millisecond)
+        glfw.PollEvents()
+        // Note: glfw.PollEvents will block on Windows during window resize, hence
+	// strange rendering occurs during resize. To keep this example simple, we
+        // will not fix this here. A partial solution is found in Rainbow-Triangle
+        // and subsequent examples.
+
+        // Create oscillating value (osl).
+        raw_duration := time.stopwatch_duration(watch)
+        secs := f32(time.duration_seconds(raw_duration))
+        osl := (math.sin(3 * secs) + 1) * 0.5
+        
+        // Clear screen with color.
+        gl.ClearColor(0.9 * osl, 0.2, 0.8, 1) // Pink: 0.9, 0.2, 0.8
+        gl.Clear(gl.COLOR_BUFFER_BIT)
+        
+        // Render screen with background color.
+        glfw.SwapBuffers(window)
     }
 }
