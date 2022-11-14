@@ -8,6 +8,6 @@ uniform mat2 projection;
 uniform mat4 translation;
 
 void main() {
-	gl_Position = translation * vec4(projection * xyPos, 0, 1);
-	TexCoords = aTexCoords;
+        gl_Position = translation * vec4(projection * xyPos, 0, 1);
+        TexCoords = aTexCoords;
 }

@@ -1,29 +1,52 @@
-// Created by Benjamin Thompson (github: bg-thompson)
-// Last updated: 2022.03.01
-// Created for educational purposes. Used verbatim, it is
-// probably unsuitable for production code.
+// An elementary program in Odin which renders a character from a
+// font and moves it in a circle.
+//
+// Created by Benjamin Thompson. Available at:
+// https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
+// Last updated: 2022.11.13
+//
+// To compile and run the program, use the command
+//
+//     odin run Moving-Character
+//
+// Created for educational purposes. Used verbatim, it is probably
+// unsuitable for production code.
 
 package main
 
-import "vendor:glfw"
+import    "vendor:glfw"
 import gl "vendor:OpenGL"
 import tt "vendor:stb/truetype"
-import "core:time"
-import f "core:fmt"
-import m "core:math"
-import   "core:os"
+import    "core:time"
+import  m "core:math"
+import  f "core:fmt"
+import    "core:os"
+import    "core:runtime"
 
+// Create alias types for vertex array / buffer objects
+VAO             :: u32
+VBO             :: u32
+ShaderProgram   :: u32
+Texture         :: u32
+
+// Global variables.
+global_vao       : VAO
+global_shader    : ShaderProgram
+watch            : time.Stopwatch
+
+// Constants
 WINDOW_H :: 800
 WINDOW_W :: 800
 FONT     :: `C:\Windows\Fonts\arialbd.ttf`
 CHARACTER:: '@'
 FONTSCALE:: 100
 
+// Functions to update constants in shader programs.
 update_uni_2fv :: proc( program : u32, var_name : cstring, new_value_ptr : [^] f32) {
     gl.UniformMatrix2fv(gl.GetUniformLocation(program, var_name), 1, gl.TRUE, new_value_ptr)
 }
 
-    update_uni_4fv :: proc( program : u32, var_name : cstring, new_value_ptr : [^] f32) {
+update_uni_4fv :: proc( program : u32, var_name : cstring, new_value_ptr : [^] f32) {
     gl.UniformMatrix4fv(gl.GetUniformLocation(program, var_name), 1, gl.TRUE, new_value_ptr)
 }
 
@@ -31,7 +54,6 @@ main :: proc() {
     //-------------------------------------------------------------
     // Use glfw to setup a window to render with OpenGl.
     //-------------------------------------------------------------
-
     glfw.Init()
     defer glfw.Terminate()
 
@@ -39,52 +61,40 @@ main :: proc() {
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
     glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
-    window := glfw.CreateWindow(WINDOW_W, WINDOW_H, "Character Render", nil, nil)
+    window := glfw.CreateWindow(WINDOW_W, WINDOW_H, "Moving Character", nil, nil)
     assert(window != nil)
     defer glfw.DestroyWindow(window)
     
     glfw.MakeContextCurrent(window)
     glfw.SwapInterval(1)
 
-    // Load OpenGL 3.3 function pointers. VERY IMPORTANT!!!
+    // Load OpenGL 3.3 function pointers.
     gl.load_up_to(3,3, glfw.gl_set_proc_address)
 
-    w_window, h_window := glfw.GetFramebufferSize(window)
-    gl.Viewport(0,0,w_window, h_window)
+    ww, hh := glfw.GetFramebufferSize(window)
+    gl.Viewport(0,0,ww,hh)
 
     // Key press / Window-resize behaviour
     glfw.SetKeyCallback(window, callback_key)
-    glfw.SetFramebufferSizeCallback(window, callback_size)
+    glfw.SetWindowRefreshCallback(window, window_refresh)
     
     //-------------------------------------------------------------
     //Set up a rectangle to have the character texture drawn on it.
     //-------------------------------------------------------------
 
     h, w : f32
-    h = 300
-    w = 300
+    h    = 300
+    w    = 300
 
     rect_verts : [6 * 4] f32 
     rect_verts = { // rect coords : vec2, texture coords : vec2
-    0, h,     0, 0,
+    0, h,    0, 0,
     0, 0,    0, 1,
     w, 0,    1, 1,
     0, h,    0, 0,
     w, 0,    1, 1,
-    w, h,     1, 0,
+    w, h,    1, 0,
     }
-
-    // Make the rendered region a rectangle with origin (0,0,0).
-    render_rect_w , render_rect_h : f32
-    render_rect_w = WINDOW_W
-    render_rect_h = WINDOW_H
-
-    proj_mat := [4] f32 {
-        1/render_rect_w, 0,
-        0, 1/render_rect_h,
-    }
-    proj_mat_ptr : [^] f32 = &proj_mat[0]
-    // Remember to update this in the render loop!
 
     //-------------------------------------------------------------
     //Use stb to load a .ttf font and create a bitmap from it.
@@ -126,117 +136,146 @@ main :: proc() {
     //Tell the GPU about the data, especially the font texture.
     //-------------------------------------------------------------
 
-    VAO : u32
-    gl.GenVertexArrays(1, &VAO)
-    gl.BindVertexArray(VAO)
+    gl.GenVertexArrays(1, &global_vao)
+    gl.BindVertexArray(global_vao)
 
-    VBO : u32
-    gl.GenBuffers(1, &VBO)
-    gl.BindBuffer(gl.ARRAY_BUFFER, VBO)
+    vbo : VBO
+    gl.GenBuffers(1, &vbo)
+    gl.BindBuffer(gl.ARRAY_BUFFER, vbo)
+
+    Glyph_texture : Texture
+    gl.GenTextures(1, &Glyph_texture)
+    gl.BindTexture(gl.TEXTURE_2D, Glyph_texture)
+    
+    // Describe GPU buffer.
     gl.BufferData(gl.ARRAY_BUFFER, size_of(rect_verts), &rect_verts, gl.STATIC_DRAW)
 
-    // Position and color attributes. DON'T FORGET TO ENABLE!!!
-    // Even more importantly... THE LAST ARGUMENT IS IN BYTES, NOT ARRAY POSITION!!!
+    // Position and color attributes. Don't forget to enable!
     gl.VertexAttribPointer(0, 2, gl.FLOAT, gl.FALSE, 4 * size_of(f32), 0 * size_of(f32))
     gl.VertexAttribPointer(1, 2, gl.FLOAT, gl.FALSE, 4 * size_of(f32), 2 * size_of(f32))
+    
     gl.EnableVertexAttribArray(0)
     gl.EnableVertexAttribArray(1)
 
     gl.PixelStorei(gl.UNPACK_ALIGNMENT, 1)
-    Glyph_texture : u32
-    gl.GenTextures(1, &Glyph_texture)
-    gl.BindTexture(gl.TEXTURE_2D, Glyph_texture)
 
     gl.TexImage2D(
-        gl.TEXTURE_2D,
-        0,
-        gl.RED,
-        bitmap_w,
-        bitmap_h,
-        0,
-        gl.RED,
-        gl.UNSIGNED_BYTE,
-        glyph_bitmap,
+        gl.TEXTURE_2D,    // texture type
+        0,                // level of detail number (default = 0)
+        gl.RED,           // texture format
+        bitmap_w,         // width
+        bitmap_h,         // height
+        0,                // border, must be 0
+        gl.RED,           // pixel data format
+        gl.UNSIGNED_BYTE, // data type of pixel data
+        glyph_bitmap,     // image data
     )
+
+    // Texture wrapping options.
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+    
+    // Texture filtering options.
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
     gl.TexParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
-
 
     //-------------------------------------------------------------
     //Compile the vertex and fragment shader.
     //-------------------------------------------------------------
 
-    shader_program : u32
-    program_ok: bool;
-
-      vertex_shader := string(#load("vertex.glsl"))
+    program_ok      : bool
+    vertex_shader   := string(#load("vertex.glsl"  ))
     fragment_shader := string(#load("fragment.glsl"))
 
-    shader_program, program_ok = gl.load_shaders_source(vertex_shader, fragment_shader);
+    global_shader, program_ok = gl.load_shaders_source(vertex_shader, fragment_shader);
 
     if !program_ok {
-        f.println("failed to load and compiler shaders"); os.exit(1)
+        f.println("ERROR: Failed to load and compile shaders."); os.exit(1)
     }
 
-    gl.UseProgram(shader_program)
+    gl.UseProgram(global_shader)
 
     //-------------------------------------------------------------
     //Render the character!
     //-------------------------------------------------------------
 
-    // Rotate the character over time.
-    watch : time.Stopwatch
+    // Start rotation timer.
     time.stopwatch_start(&watch)
 
+    // Texture blending options.
     gl.Enable(gl.BLEND)
     gl.BlendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
 
+    // Main loop.
     for !glfw.WindowShouldClose(window) {
-        glfw.PollEvents()
-
-        raw_duration := time.stopwatch_duration(watch)
-        secs := f32(time.duration_seconds(raw_duration))
-
-        theta := f32(m.PI * secs )
-
-        radius := f32(0.5)
-        translation_mat := [16] f32 {
-            1, 0, 0, radius * m.cos(theta),
-            0, 1, 0, radius * m.sin(theta),
-            0, 0, 1, 0,
-            0, 0, 0, 1,
-         }
-
-        trans_mat_ptr : [^] f32 = &translation_mat[0]
-
-        // Draw commands.
-        gl.BindVertexArray(VAO)
-        defer gl.BindVertexArray(0)
-        gl.BindTexture(gl.TEXTURE_2D, Glyph_texture)
-
-
-        update_uni_2fv(shader_program, "projection", proj_mat_ptr)
-        update_uni_4fv(shader_program, "translation", trans_mat_ptr)
-
-        gl.ClearColor(0.1, 0.1, 0.1, 1)
-        gl.Clear(gl.COLOR_BUFFER_BIT)
-
-        // First arg: vertex array starting index, Last arg: how many vertices to draw.
-        gl.DrawArrays(gl.TRIANGLES, 0, 6)
-        glfw.SwapBuffers(window)
+	glfw.PollEvents()
+	// If a key press happens, .PollEvents calls callback_key, defined below.
+        // Note: glfw.PollEvents blocks on window menu interaction selection or
+	// window resize. During window_resize, glfw.SetWindowRefreshCallback
+	// calls window_refresh to redraw the window.
+	
+	render_screen(window, global_vao)
     }
 }
 
+render_screen :: proc( window : glfw.WindowHandle, vao : VAO) {
+    // Calculate projection matrix.
+    render_rect_w , render_rect_h : f32
+    render_rect_w = WINDOW_W
+    render_rect_h = WINDOW_H
+
+    proj_mat := [4] f32 {
+        1/render_rect_w, 0,
+        0, 1/render_rect_h,
+    }
+    
+    proj_mat_ptr : [^] f32 = &proj_mat[0]
+
+    // Calculate translation matrix.
+    raw_duration := time.stopwatch_duration(watch)
+    secs := f32(time.duration_seconds(raw_duration))
+
+    theta := f32(m.PI * secs )
+
+    radius := f32(0.5)
+    translation_mat := [16] f32 {
+        1, 0, 0, radius * m.cos(theta),
+        0, 1, 0, radius * m.sin(theta),
+        0, 0, 1, 0,
+        0, 0, 0, 1,
+    }
+
+    trans_mat_ptr : [^] f32 = &translation_mat[0]
+
+    gl.BindVertexArray(vao)
+    defer gl.BindVertexArray(0)
+    
+    // Send matrices to the shader.
+    update_uni_2fv(global_shader, "projection",  proj_mat_ptr)
+    update_uni_4fv(global_shader, "translation", trans_mat_ptr)
+    
+    // Draw commands.
+    gl.ClearColor(0.1, 0.1, 0.1, 1)
+    gl.Clear(gl.COLOR_BUFFER_BIT)
+
+    gl.DrawArrays(gl.TRIANGLES, 0, 6)
+    glfw.SwapBuffers(window)
+}
+
+// Quit the window if the ESC key is pressed. This procedure is called by
+// glfw.SetKeyCallback.
 callback_key :: proc "c" ( window : glfw.WindowHandle, key, scancode, action, mods : i32 ) {
     if action == glfw.PRESS && key == glfw.KEY_ESCAPE {
         glfw.SetWindowShouldClose(window, true)
     }
 }
 
-callback_size :: proc "c" ( window : glfw.WindowHandle, w : i32, h : i32 ) {
-    // w, h are the size in pixel of the new window.
-    gl.Viewport(0, 0, w, h)    
+// If the window needs to be redrawn (e.g. the user resizes the window), redraw the window.
+// This procedure is called by  glfw.SetWindowRefreshCallback.
+window_refresh :: proc "c" ( window : glfw.WindowHandle ) {
+    context = runtime.default_context()
+    w, h : i32
+    w, h = glfw.GetWindowSize(window)
+    gl.Viewport(0,0,w,h)
+    render_screen(window, global_vao)
 }
-

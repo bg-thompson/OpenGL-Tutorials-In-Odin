@@ -41,7 +41,7 @@ main :: proc() {
     glfw.WindowHint(glfw.CONTEXT_VERSION_MINOR, 3)
     glfw.WindowHint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
-    window := glfw.CreateWindow(800, 800, "Rainbow Triangle", nil, nil)
+    window := glfw.CreateWindow(800, 800, "Character Render", nil, nil)
     assert(window != nil)
     defer glfw.DestroyWindow(window)
     
@@ -62,11 +62,11 @@ main :: proc() {
 
     sq := math.sqrt(f32(3)) * 0.5
     
-    vertices : [18] f32 = {
+    vertices : [15] f32 = {
         // Coordinates ; Colors
-         1.0,   0, 0,    1, 0, 0,
-        -0.5,  sq, 0,    0, 1, 0,
-        -0.5, -sq, 0,    0, 0, 1,
+         1.0,   0,       1, 0, 0,
+        -0.5,  sq,       0, 1, 0,
+        -0.5, -sq,       0, 0, 1,
     }
 
     // Set up vertex array / buffer objects.
@@ -85,13 +85,13 @@ main :: proc() {
 
     // Position and color attributes. Don't forget to enable!
     gl.VertexAttribPointer(0,                   // index
-                           3,                   // size
+                           2,                   // size
                            gl.FLOAT,            // type
                            gl.FALSE,            // normalized
-                           6 * size_of(f32),    // stride
+                           5 * size_of(f32),    // stride
                            0)                   // offset
     
-    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 6 * size_of(f32), 3 * size_of(f32))
+    gl.VertexAttribPointer(1, 3, gl.FLOAT, gl.FALSE, 5 * size_of(f32), 2 * size_of(f32))
 
     // Enable the vertex position and color attributes defined above.
     gl.EnableVertexAttribArray(0)
