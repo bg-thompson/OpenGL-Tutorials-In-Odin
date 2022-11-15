@@ -14,19 +14,25 @@ A window which oscillates between pink and blue.
 
 An RGB triangle which rotates over time.
 
-<img src="./Readme-Imgs/rainbow-triangle.jpg" alt="A OS window showing a slightly slanted RGB triangle" width="400">
+<img src="./Readme-Imgs/rainbow-triangle.jpg" alt="A OS window showing a slightly slanted RGB triangle." width="400">
 
 ## [Rotating Cube](./Rotating-Cube)
 
 A cube with different faces which rotates over time.
 
-<img src="./Readme-Imgs/rotating-cube.png" alt="An OS window showing a cube in the middle of rotation" width="400">
+<img src="./Readme-Imgs/rotating-cube.png" alt="An OS window showing a cube in the middle of rotation." width="400">
+
+## [Psychedelic Earth](./Psychedelic-Earth)
+
+An image of the Earth changes color over time.
+
+<img src="./Readme-Imgs/psychedelic-earth.png" alt="An OS window showing a picture of the with purple seas and turqoise land." width="400">
 
 ## [Moving Character](./Moving-Character)
 
 A character moves in a counter-clockwise circle over time.
 
-<img src="./Readme-Imgs/moving-character.png" alt="An OS window showing the character '@'" width="400">
+<img src="./Readme-Imgs/moving-character.png" alt="An OS window showing the character '@'." width="400">
 
 ## [Wavy Words](./Wavy-Words)
 
