@@ -39,3 +39,9 @@ A character moves in a counter-clockwise circle over time.
 The characters of a sentence move in the form of a sine wave over time.
 
 <img src="./Readme-Imgs/wavy-words.png" alt="The sentence: Duty calls, 3 o'clock tea! in the shape of a sine wave." width="400">
+
+## [Hidden Animal](./Hidden-Animal)
+
+Triangles which together form an animal are revealed when the mouse cursor passes over them.
+
+<img src="./Readme-Imgs/hidden-animal.png" alt="A collection of partially uncovered grey triangles which together form a popular animal." width="400">
