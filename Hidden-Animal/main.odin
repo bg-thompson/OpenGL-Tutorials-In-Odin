@@ -197,10 +197,10 @@ import_nodes :: proc() {
     nodes = make([] Node, number_nodes)
     for i in 0..=number_nodes-1 {
 	nodes[i].index = i32(i)
-	float, ok := v.parse_f32(lines[2*i])
+	float, ok := v.parse_f32(s.trim_right_space(lines[2*i]))
 	assert(ok)
 	nodes[i].coord.x = float
-	float2, ok2 := v.parse_f32(lines[2*i + 1])
+	float2, ok2 := v.parse_f32(s.trim_right_space(lines[2*i + 1]))
 	assert(ok2)
 	nodes[i].coord.y = -float2
     }
