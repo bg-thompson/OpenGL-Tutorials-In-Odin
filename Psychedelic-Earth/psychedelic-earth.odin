@@ -1,19 +1,19 @@
 // An elementary program in Odin which renders "The Blue Marble" taken
 // by the Apollo 17 Crew, 1972, animated with mild psychedelic colors.
 //
-// The photo is public domain, and available at:
+// The photo is in the public domain, and available at:
 // https://commons.wikimedia.org/wiki/File:The_Blue_Marble.jpg
 //
 // The .qoi (Quite OK Image Format) version of the image in this directory
-//was converted from the .jpg version above with IrfanView.
+// was converted from the .jpg version above with IrfanView.
 //
 // Created by Benjamin Thompson. Available at:
 // https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
-// Last updated: 2022.11.14
+// Last updated: 2024.09.15
 //
-// To compile and run the program, use the command
+// To compile and run the program with optimizations, use the command
 //
-//     odin run Psychedelic-Earth
+//     odin run Psychedelic-Earth -o:speed
 //
 // Created for educational purposes. Used verbatim, it is probably
 // unsuitable for production code.
@@ -28,7 +28,7 @@ import    "core:time"
 import  m "core:math"
 import  f "core:fmt"
 import    "core:os"
-import    "core:runtime"
+import    "base:runtime"
 
 // Create alias types for vertex array / buffer objects
 VAO             :: u32

@@ -9,11 +9,11 @@
 
 // Created by Benjamin Thompson. Available at:
 // https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
-// Last updated: 2023.01.28
+// Last updated: 2024.09.15
 //
-// To compile and run the program, use the command
+// To compile and run the program with optimizations, use the command
 //
-//     odin run Hidden-Animal
+//     odin run Hidden-Animal -o:speed
 //
 // Created for educational purposes. Used verbatim, it is probably
 // unsuitable for production code.
@@ -27,9 +27,9 @@ import    "core:time"
 import m  "core:math"
 import mr "core:math/rand"
 import    "core:os"
-import    "core:runtime"
 import    "vendor:glfw"
 import gl "vendor:OpenGL"
+import    "base:runtime"
 
 cam_pos_wv		: [2] f32
 mouse_wv                : [2] f32

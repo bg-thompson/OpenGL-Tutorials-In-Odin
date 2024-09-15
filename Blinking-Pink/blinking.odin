@@ -3,11 +3,11 @@
 //
 // Created by Benjamin Thompson. Available at:
 // https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
-// Last updated: 2022.11.13
+// Last updated: 2024.09.15
 //
-// To compile and run the program, use the command
+// To compile and run the program with optimizations, use the command
 //
-//     odin run Blinking-Pink
+//     odin run Blinking-Pink -o:speed
 //
 // Created for educational purposes. Used verbatim, it is probably
 // unsuitable for production code.

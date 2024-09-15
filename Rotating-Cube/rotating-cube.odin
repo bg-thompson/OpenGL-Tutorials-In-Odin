@@ -3,11 +3,11 @@
 //
 // Created by Benjamin Thompson. Available at:
 // https://github.com/bg-thompson/OpenGL-Tutorials-In-Odin
-// Last updated: 2022.11.13
+// Last updated: 2024.09.15
 //
-// To compile and run the program, use the command
+// To compile and run the program with optimizations, use the command
 //
-//     odin run Rotating-Cube
+//     odin run Rotating-Cube -o:speed
 //
 // Created for educational purposes. Used verbatim, it is probably
 // unsuitable for production code.
@@ -20,7 +20,7 @@ import    "core:time"
 import m  "core:math"
 import    "core:fmt"
 import    "core:os"
-import    "core:runtime"
+import    "base:runtime"
 
 // Create alias types for vertex array / buffer objects
 VAO             :: u32
