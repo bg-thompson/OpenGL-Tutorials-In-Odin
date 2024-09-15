@@ -1,8 +1,14 @@
 # A collection of introductory OpenGL programs in Odin.
 
-The programs below illustrate OpenGL functions in Odin using the wrappers in "vendor:OpenGL". The programs start very basic and get progressively more complicated.
+The programs below illustrate OpenGL functions in Odin using the wrappers in `"vendor:OpenGL"`. The programs start very basic and get progressively more complicated.
 
-The glfw library wrappers for Odin are also illustrated.
+The glfw library wrappers for Odin in `"vendor:glfw"` are also illustrated.
+
+## Building
+
+Building the examples is trivial; the standard Odin distribution is the ONLY dependency. 
+
+Simply call `odin run DIRECTORY -o:speed` where DIRECTORY is the name of one of the project's directories to build and run an example. (E.g. `odin run Rainbow-Triangle -o:speed`.)
 
 ## [Blinking Pink](./Blinking-Pink)
 
